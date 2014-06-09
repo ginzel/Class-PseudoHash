@@ -1,5 +1,5 @@
 package Class::PseudoHash;
-$Class::PseudoHash::VERSION = '1.10';
+$Class::PseudoHash::VERSION = '1.20';
 
 use 5.005;
 use strict;
@@ -9,7 +9,7 @@ use constant NO_SUCH_INDEX => 'Bad index while coercing array into hash';
 use overload (
     '%{}'  => sub { $$Obj = $_[0]; return $Proxy },
     '""'   => sub { overload::AddrRef($_[0]) },
-    '0+'   => sub { 
+    '0+'   => sub {
 	my $str = overload::AddrRef($_[0]);
 	hex(substr($str, index($str, '(') + 1, -1));
     },
@@ -78,7 +78,7 @@ sub STORE {
 	    ? _croak(NO_SUCH_INDEX) :
 	$FixedKeys
 	    ? _croak(NO_SUCH_FIELD, $key) :
-	@$self
+	($self->[0]{$key} = @$self)
     ] = $value;
 }
 
@@ -157,7 +157,7 @@ Hence, if your code use the preferred C<fields::phash()> function, just write:
     use fields;
     use Class::PseudoHash;
 
-then everything will work like before.  If you are creating pseudo-hashes 
+then everything will work like before.  If you are creating pseudo-hashes
 by hand (C<[{}]> anyone?), just write this instead:
 
     $ref = Class::PseudoHash->new;
