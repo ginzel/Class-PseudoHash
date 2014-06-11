@@ -1,13 +1,16 @@
 package Class::PseudoHash;
-$Class::PseudoHash::VERSION = '1.20';
 
 use 5.10.0;	# //=
 use strict;
-use vars qw/$FixedKeys $Obj $Proxy/;
+our $VERSION = '1.30';
+
+# Study perldoc perltie and perldoc overload ('%{}') to understand internals of this modul.
+
+our($Obj, $Proxy);
 use constant NO_SUCH_FIELD => 'No such pseudohash field "%s"';
 use constant NO_SUCH_INDEX => 'Bad index while coercing array into hash';
 use overload (
-    '%{}'  => sub { $$Obj = $_[0]; return $Proxy },
+    '%{}'  => sub { $Obj = $_[0]; return $Proxy },
     '""'   => sub { overload::AddrRef($_[0]) },
     '0+'   => sub {
 	my $str = overload::AddrRef($_[0]);
@@ -19,7 +22,7 @@ use overload (
     'fallback' => 1,
 );
 
-$FixedKeys = 1;
+our $FixedKeys = 1;
 
 sub import {
     no strict 'refs';
@@ -59,7 +62,7 @@ sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
 sub FETCH {
     my ($self, $key) = @_;
 
-    $self = $$$self;
+    $self = $$self;
 
     return $self->[
 	$self->[0]{$key} >= 1
@@ -75,7 +78,7 @@ sub FETCH {
 sub STORE {
     my ($self, $key, $value) = @_;
 
-    $self = $$$self;
+    $self = $$self;
 
     return $self->[
 	$self->[0]{$key} >= 1
@@ -98,24 +101,24 @@ sub TIEHASH {
 }
 
 sub FIRSTKEY {
-    scalar keys %{$${$_[0]}->[0]};
-    each %{$${$_[0]}->[0]};
+    scalar keys %{${$_[0]}->[0]};
+    each %{${$_[0]}->[0]};
 }
 
 sub NEXTKEY {
-    each %{$${$_[0]}->[0]};
+    each %{${$_[0]}->[0]};
 }
 
 sub EXISTS {
-    exists $${$_[0]}->[0]{$_[1]};
+    exists ${$_[0]}->[0]{$_[1]};
 }
 
 sub DELETE {
-    delete $${$_[0]}->[0]{$_[1]};
+    delete ${$_[0]}->[0]{$_[1]};
 }
 
 sub CLEAR {
-    @{$${$_[0]}} = ();
+    @{${$_[0]}} = ();
 }
 
 1;
@@ -222,3 +225,5 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 =cut
+
+# vi: set ts=8 sw=4 nowrap:
