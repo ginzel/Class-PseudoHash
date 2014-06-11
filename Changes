@@ -2,6 +2,7 @@
 
 * Fixed key=># autovivification if $FixedKeys=0
 * Added constructing with existing key mapping
+* lvalue array method
 
 [Changes for 1.10 - 2007-10-14]
 

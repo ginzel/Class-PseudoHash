@@ -54,6 +54,8 @@ sub new {
     bless(\@array, $class);
 }
 
+sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
+
 sub FETCH {
     my ($self, $key) = @_;
 
@@ -139,7 +141,7 @@ October 14, 2007.
 
     my(%hash)= (Id => 1, Value => 2);		# existing mapping
     my $ref3 = Class::PseudoHash->new(\%hash);	# another constructor syntax
-    @{$ref3}[1..$#$ref3] = qw/1 foo/;		# array assignment
+    ($ref3->array) = qw/1 foo/;			# array assignment
     $Class::PseudoHash::FixedKeys = 0;		# allow new keys
     $ref3->{Comment} = 'new key';		# == $ref3->[3]
 

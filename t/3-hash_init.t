@@ -17,7 +17,9 @@ $phash = $class->new(\%h);
 
 is(scalar $#$phash, 2,	   'count');
 
-@{$phash}[1..$#$phash] = qw/1 foo/;
+#$phash->array = qw/1 foo/;
+($phash->array) = (1, 'foo');
+#warn Dumper $phash;
 
 is($phash->[1],     1,     'array access Id');
 is($phash->{Id},    1,     'hash access Id');
