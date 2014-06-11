@@ -1,6 +1,7 @@
 [Changes for 1.20 - 2014-06-09]
 
 * Fixed key=># autovivification if $FixedKeys=0
+* Added constructing with existing key mapping
 
 [Changes for 1.10 - 2007-10-14]
 

@@ -1,7 +1,7 @@
 package Class::PseudoHash;
 $Class::PseudoHash::VERSION = '1.20';
 
-use 5.005;
+use 5.10.0;	# //=
 use strict;
 use vars qw/$FixedKeys $Obj $Proxy/;
 use constant NO_SUCH_FIELD => 'No such pseudohash field "%s"';
@@ -36,7 +36,11 @@ sub new {
     my $class = shift;
     my @array = undef;
 
-    if (UNIVERSAL::isa($_[0], 'ARRAY')) {
+    if (UNIVERSAL::isa($_[0], 'HASH')) {
+	@array = @_;	# user is responsible for the "quality" (length) of the array/arguments
+	$array[keys %{$array[0]}] //= undef;	# allocate size, so $#array works
+    }
+    elsif (UNIVERSAL::isa($_[0], 'ARRAY')) {
 	foreach my $k (@{$_[0]}) {
 	    $array[$array[0]{$k} = @array] = $_[1][$#array];
 	}
@@ -129,9 +133,15 @@ October 14, 2007.
 
     use Class::PseudoHash;
 
-    my @args = ([qw/key1 key2 key3 key4/], [1..10]);
+    my(@args)= ([qw/key1 key2 key3 key4/], [1..10]);
     my $ref1 = fields::phash(@args);		# phash() override
     my $ref2 = Class::PseudoHash->new(@args);	# constructor syntax
+
+    my(%hash)= (Id => 1, Value => 2);		# existing mapping
+    my $ref3 = Class::PseudoHash->new(\%hash);	# another constructor syntax
+    @{$ref3}[1..$#$ref3] = qw/1 foo/;		# array assignment
+    $Class::PseudoHash::FixedKeys = 0;		# allow new keys
+    $ref3->{Comment} = 'new key';		# == $ref3->[3]
 
 =head1 DESCRIPTION
 
