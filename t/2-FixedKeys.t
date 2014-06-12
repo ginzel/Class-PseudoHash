@@ -14,7 +14,7 @@ $phash = $class->new;
 $Class::PseudoHash::FixedKeys = 0;
 $phash->{foo} = 'bar';
 
-#use Data::Dumper;
+use Data::Dumper;
 #warn Dumper $phash;
 
 is($phash->[1],   'bar', 'array access');
