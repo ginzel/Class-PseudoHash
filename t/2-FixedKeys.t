@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 3;
+use Test::More tests => 4;
 
 my ($class, $phash);
 
@@ -19,3 +19,7 @@ $phash->{foo} = 'bar';
 
 is($phash->[1],   'bar', 'array access');
 is($phash->{foo}, 'bar', 'hash access');
+is_deeply([keys %{$phash}], [qw/foo/], 'keys');
+
+#delete $phash->{foo};
+#warn Dumper $phash;

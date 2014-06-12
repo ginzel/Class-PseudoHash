@@ -81,13 +81,13 @@ sub _croak { require Carp; Carp::croak(sprintf(shift, @_)); }
 
 sub TIEHASH(@) { bless \$Obj => shift; }
 
-sub FIRSTKEY() { scalar keys %{${$_[0]}->[0]}; each %{${$_[0]}->[0]}; }
+sub FIRSTKEY() { scalar keys %{${$_[0]}->[0]}; $_[0]->NEXTKEY; }
 
 sub NEXTKEY($) { each %{${$_[0]}->[0]}; }
 
 sub EXISTS($) { exists ${$_[0]}->[0]{$_[1]}; }
 
-sub DELETE($) { delete ${$_[0]}->[0]{$_[1]}; }
+sub DELETE($) { my($self, $key) =  @_; $self = $$self; undef $self->{$key} ; delete $self->[0]{$key}; }
 
 sub CLEAR() { @{${$_[0]}} = (); }
 
