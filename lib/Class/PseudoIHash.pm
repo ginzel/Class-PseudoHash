@@ -1,0 +1,217 @@
+package Class::PseudoIHash;
+
+# case-insensitive hash keys
+# based on Class::PseudoHash and Hash::Case::Preserve
+# http://cpansearch.perl.org/src/MARKOV/Hash-Case-1.02/lib/Hash/Case/Preserve.pm
+
+# ToDo: keep FIRST/LAST
+
+use 5.10.0;	# //=
+use strict;
+our $VERSION = '0.2';
+
+# Study perldoc perltie and perldoc overload ('%{}') to understand internals of this modul.
+
+our($Obj, $Proxy);
+use constant NO_SUCH_FIELD => 'No such pseudohash field "%s"';
+use constant NO_SUCH_INDEX => 'Bad index while coercing array into hash';
+use overload (
+    '%{}'  => sub { $Obj = $_[0]; return $Proxy },
+    '""'   => sub { overload::AddrRef($_[0]) },
+    '0+'   => sub {
+	my $str = overload::AddrRef($_[0]);
+	hex(substr($str, index($str, '(') + 1, -1));
+    },
+    'bool' => sub { 1 },
+    'cmp'  => sub { "$_[0]" cmp "$_[1]" },
+    '<=>'  => sub { "$_[0]" cmp "$_[1]" }, # for completeness' sake
+    'fallback' => 1,
+);
+
+our $FixedKeys = 1;
+
+sub import {
+    my $class = shift;
+    tie %{$Proxy}, $class;
+
+    no strict 'refs';
+    *{'fields::phash'} = sub { $class->new(@_); } unless defined $_[0];
+}
+
+sub new {
+    my $class = shift;
+    my @array = undef;
+
+    if (UNIVERSAL::isa($_[0], 'HASH')) {
+	@array = @_;	# user is responsible for the "quality" (length) of the array/arguments
+	$array[0] = [{}, {}];	# lckeys => #, keys => lckeys
+	do { my $lck = lc $_; $array[0][0]{$lck} = $_[0]->{$_}; $array[0][1]{$lck} = $_; } for keys %{$_[0]};
+	$array[keys %{$array[0][0]}] //= undef;	# allocate size, so $#array works
+    }
+    elsif (UNIVERSAL::isa($_[0], 'ARRAY')) {
+	foreach my $k (@{$_[0]}) {
+	    my $lck = lc $k;
+	    $array[$array[0][1]{$lck} = $k, $array[0][0]{$lck} = @array] = $_[1][$#array];
+	}
+    }
+    else {
+	while (my($k, $v) = splice(@_, 0, 2)) {
+	    my $lck = lc $k;
+	    $array[$array[0][1]{$lck} = $k, $array[0][0]{$lck} = @array] = $v;
+	}
+    }
+    bless(\@array, $class);
+}
+
+sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
+
+sub FETCH($) {
+    my $self = shift;
+    my $lckey = lc shift;
+
+    $self = $$self;
+    return $self->[
+	$self->[0][0]{$lckey} >= 1	? $self->[0][0]{$lckey} :
+	defined($self->[0][0]{$lckey})	? _croak(NO_SUCH_INDEX) :
+	$FixedKeys			? _croak(NO_SUCH_FIELD, $lckey) : @$self
+    ];
+}
+
+sub STORE($$) {
+    my($self, $key, $value) = @_;
+    my $lckey = lc $key;
+
+    $self = $$self;
+    $self->[
+	$self->[0][0]{$lckey} >= 1	? $self->[0][0]{$lckey} :
+	defined($self->[0][0]{$lckey})	? _croak(NO_SUCH_INDEX) :
+	$FixedKeys			? _croak(NO_SUCH_FIELD, $key) :
+	($self->[0][1]{$lckey} = $key, $self->[0][0]{$lckey} = @$self)
+    ] = $value;
+}
+
+sub _croak { require Carp; Carp::croak(sprintf(shift, @_)); }
+
+sub TIEHASH(@) { bless \$Obj => shift; }
+
+sub FIRSTKEY() {
+    scalar keys %{${$_[0]}->[0][1]};
+    $_[0]->NEXTKEY;
+}
+
+sub NEXTKEY($) {
+    my $self = shift;
+    $self = $$self;
+    if (my($k, $v) = each %{$self->[0][1]}) {
+	return wantarray ? ($v, $self->[$self->[0][0]{$k}]) : $v;
+    } else { return () }
+}
+
+sub EXISTS($) { exists ${$$_[0]}->[0][0]{lc $_[1]} }
+
+sub DELETE($) {
+    my $self = shift;
+    my $lckey = lc shift;
+    $self = $$self;
+    undef $self->{$lckey};
+    delete $self->[0][0]{$lckey};
+    delete $self->[0][1]{$lckey};
+}
+
+sub CLEAR() { @{${$_[0]}} = (); }
+
+1;
+
+__END__
+
+=head1 NAME
+
+Class::PseudoIHash - Emulates Pseudo-Hash behaviour with case insensitive keys
+
+=head1 VERSION
+
+This document describes version 1.0 of Class::PseudoIHash, released
+June 14, 2014.
+
+=head1 SYNOPSIS
+
+    use Class::PseudoIHash;
+
+    my(@args)= ([qw/key1 key2 key3 key4/], [1..10]);
+    my $ref2 = Class::PseudoIHash->new(@args);	# constructor syntax
+
+    my(%hash)= (Id => 1, Value => 2);		# existing mapping
+    my $ref3 = Class::PseudoIHash->new(\%hash);	# another constructor syntax
+    ($ref3->array) = qw/1 foo/;			# array assignment
+    $ref3->{Comment} = 'new key';		# == $ref3->[3]
+    warn $ref3->{comment};			# 'new_key'
+
+=head1 DESCRIPTION
+
+Due to its impact on overall performance of ordinary hashes, pseudo-hashes
+are deprecated in Perl 5.8.
+
+As of Perl 5.10, pseudo-hashes have been removed from Perl, replaced by
+restricted hashes provided by L<Hash::Util>.  Additionally, Perl 5.10 no
+longer supports the C<fields::phash()> API.
+
+Although L<perlref/Pseudo-hashes: Using an array as a hash> recommends
+against depending on the underlying implementation (i.e. using the first
+array element as hash indice), there are undoubtly many legacy codebase
+still depending on pseudohashes; elimination of pseudo-hashes would
+therefore require a massive rewrite of their programs.
+
+Back in 2002, as one of the primary victims, I tried to devise a drop-in
+solution that could emulate exactly the same semantic of pseudo-hashes, thus
+keeping all my legacy code intact.  So C<Class::PseudoHash> was born.
+
+Hence, if your code use the preferred C<fields::phash()> function, just write:
+
+    use fields;
+    use Class::PseudoHash;
+
+then everything will work like before.  If you are creating pseudo-hashes
+by hand (C<[{}]> anyone?), just write this instead:
+
+    $ref = Class::PseudoHash->new;
+
+and use the returned object in whatever way you like.
+
+=head1 SEE ALSO
+
+L<fields>, L<perlref/Pseudo-hashes: Using an array as a hash>
+
+=head1 AUTHORS
+
+Audrey Tang E<lt>cpan@audreyt.orgE<gt>
+Hans Ginzel E<lt>hans@matfyz.cz<gt>
+
+=head1 COPYRIGHT
+
+Copyright 2001, 2002, 2007 by Audrey Tang E<lt>cpan@audreyt.orgE<gt>.
+
+This software is released under the MIT license cited below.
+
+=head2 The "MIT" License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+=cut
+
+# vi: set ts=8 sw=4 nowrap:
