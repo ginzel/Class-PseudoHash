@@ -25,14 +25,11 @@ use overload (
 our $FixedKeys = 1;
 
 sub import {
-    no strict 'refs';
-
     my $class = shift;
     tie %{$Proxy}, $class;
 
-    *{'fields::phash'} = sub {
-	$class->new(@_);
-    } unless defined $_[0];
+    no strict 'refs';
+    *{'fields::phash'} = sub { $class->new(@_); } unless defined $_[0];
 }
 
 sub new {
@@ -49,77 +46,50 @@ sub new {
 	}
     }
     else {
-	while (my ($k, $v) = splice(@_, 0, 2)) {
+	while (my($k, $v) = splice(@_, 0, 2)) {
 	    $array[$array[0]{$k} = @array] = $v;
 	}
     }
-
     bless(\@array, $class);
 }
 
 sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
 
-sub FETCH {
-    my ($self, $key) = @_;
+sub FETCH($) {
+    my($self, $key) = @_;
 
     $self = $$self;
-
     return $self->[
-	$self->[0]{$key} >= 1
-	    ? $self->[0]{$key} :
-	defined($self->[0]{$key})
-	    ? _croak(NO_SUCH_INDEX) :
-	$FixedKeys
-	    ? _croak(NO_SUCH_FIELD, $key) :
-	@$self
+	$self->[0]{$key} >= 1     ? $self->[0]{$key} :
+	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) :
+	$FixedKeys                ? _croak(NO_SUCH_FIELD, $key) : @$self
     ];
 }
 
-sub STORE {
-    my ($self, $key, $value) = @_;
+sub STORE($$) {
+    my($self, $key, $value) = @_;
 
     $self = $$self;
-
     return $self->[
-	$self->[0]{$key} >= 1
-	    ? $self->[0]{$key} :
-	defined($self->[0]{$key})
-	    ? _croak(NO_SUCH_INDEX) :
-	$FixedKeys
-	    ? _croak(NO_SUCH_FIELD, $key) :
-	($self->[0]{$key} = @$self)
+	$self->[0]{$key} >= 1     ? $self->[0]{$key} :
+	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) :
+	$FixedKeys                ? _croak(NO_SUCH_FIELD, $key) : ($self->[0]{$key} = @$self)
     ] = $value;
 }
 
-sub _croak {
-    require Carp;
-    Carp::croak(sprintf(shift, @_));
-}
+sub _croak { require Carp; Carp::croak(sprintf(shift, @_)); }
 
-sub TIEHASH {
-    bless \$Obj => shift;
-}
+sub TIEHASH(@) { bless \$Obj => shift; }
 
-sub FIRSTKEY {
-    scalar keys %{${$_[0]}->[0]};
-    each %{${$_[0]}->[0]};
-}
+sub FIRSTKEY() { scalar keys %{${$_[0]}->[0]}; each %{${$_[0]}->[0]}; }
 
-sub NEXTKEY {
-    each %{${$_[0]}->[0]};
-}
+sub NEXTKEY($) { each %{${$_[0]}->[0]}; }
 
-sub EXISTS {
-    exists ${$_[0]}->[0]{$_[1]};
-}
+sub EXISTS($) { exists ${$_[0]}->[0]{$_[1]}; }
 
-sub DELETE {
-    delete ${$_[0]}->[0]{$_[1]};
-}
+sub DELETE($) { delete ${$_[0]}->[0]{$_[1]}; }
 
-sub CLEAR {
-    @{${$_[0]}} = ();
-}
+sub CLEAR() { @{${$_[0]}} = (); }
 
 1;
 
