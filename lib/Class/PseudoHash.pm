@@ -7,7 +7,6 @@ our $VERSION = '1.30';
 # Study perldoc perltie and perldoc overload ('%{}') to understand internals of this modul.
 
 our($Obj, $Proxy);
-use constant NO_SUCH_FIELD => 'No such pseudohash field "%s"';
 use constant NO_SUCH_INDEX => 'Bad index while coercing array into hash';
 use overload (
     '%{}'  => sub { $Obj = $_[0]; return $Proxy },
@@ -22,15 +21,7 @@ use overload (
     'fallback' => 1,
 );
 
-our $FixedKeys = 1;
-
-sub import {
-    my $class = shift;
-    tie %{$Proxy}, $class;
-
-    no strict 'refs';
-    *{'fields::phash'} = sub { $class->new(@_); } unless defined $_[0];
-}
+sub import { tie %{$Proxy}, shift; }
 
 sub new {
     my $class = shift;
@@ -61,8 +52,7 @@ sub FETCH($) {
     $self = $$self;
     return $self->[
 	$self->[0]{$key} >= 1     ? $self->[0]{$key} :
-	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) :
-	$FixedKeys                ? _croak(NO_SUCH_FIELD, $key) : @$self
+	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) : @$self
     ];
 }
 
@@ -72,8 +62,7 @@ sub STORE($$) {
     $self = $$self;
     return $self->[
 	$self->[0]{$key} >= 1     ? $self->[0]{$key} :
-	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) :
-	$FixedKeys                ? _croak(NO_SUCH_FIELD, $key) : ($self->[0]{$key} = @$self)
+	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) : ($self->[0]{$key} = @$self)
     ] = $value;
 }
 

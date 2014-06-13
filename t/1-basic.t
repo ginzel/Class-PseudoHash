@@ -15,7 +15,8 @@ $phash = $class->new(@arg);
 
 isa_ok($phash, $class, 'new()');
 
-$phash = fields::phash(@arg);
+#$phash = fields::phash(@arg);
+$phash = Class::PseudoHash->new(@arg);
 
 isa_ok($phash, $class, 'phash()');
 
