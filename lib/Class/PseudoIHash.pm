@@ -55,6 +55,7 @@ sub new {
 }
 
 sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
+*row = \&array;
 
 sub FETCH($) {
     my $self = shift;
