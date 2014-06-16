@@ -1,14 +1,15 @@
-package Class::PseudoIHash;
+package Class::PseudoIxIIHash;
 
-# case-insensitive hash keys
-# based on Class::PseudoHash and Hash::Case::Preserve
+# ordered inteligent case-insensitive hash keys
+# based on Class::PseudoIxIHash and Hash::Case::Preserve
 # http://cpansearch.perl.org/src/MARKOV/Hash-Case-1.02/lib/Hash/Case/Preserve.pm
 
-# ToDo: keep FIRST/LAST
+# ToDo: keep FIRST/LAST?
 
 use 5.10.0;	# //=
+#use 5.12;	# each @array
 use strict;
-our $VERSION = '0.2';
+our $VERSION = '0.1';
 
 # Study perldoc perltie and perldoc overload ('%{}') to understand internals of this modul.
 
@@ -29,26 +30,30 @@ use overload (
 
 sub import { tie %{$Proxy}, shift; }
 
+use subs qw/lc/;
+sub lc { return /^\".*\"$/ ? $_ : CORE::lc $_ for (shift); }
+
 sub new {
     my $class = shift;
-    my @array = undef;
+    my(@array) = ([{}, [], undef], );	# lckeys => #, order of keys, counter
 
     if (UNIVERSAL::isa($_[0], 'HASH')) {
-	@array = @_;	# user is responsible for the "quality" (length) of the array/arguments
-	$array[0] = [{}, {}];	# lckeys => #, lckeys => keys
-	do { my $lck = lc $_; $array[0][0]{$lck} = $_[0]->{$_}; $array[0][1]{$lck} = $_; } for keys %{$_[0]};
-	$array[keys %{$array[0][0]}] //= undef;	# allocate size, so $#array works
+	_croak('%s', "Ordered (Pseudo)Hash cannot be initialised from an unordered hash.\n"); # or sort keys?
     }
     elsif (UNIVERSAL::isa($_[0], 'ARRAY')) {
 	foreach my $k (@{$_[0]}) {
-	    my $lck = lc $k;
-	    $array[$array[0][1]{$lck} = $k, $array[0][0]{$lck} = @array] = $_[1][$#array];
+	    $array[
+		push(@{$array[0][1]}, $k),
+		$array[0][0]{lc $k} = @array
+	    ] = $_[1][$#array];
 	}
     }
     else {
 	while (my($k, $v) = splice(@_, 0, 2)) {
-	    my $lck = lc $k;
-	    $array[$array[0][1]{$lck} = $k, $array[0][0]{$lck} = @array] = $v;
+	    $array[
+		push(@{$array[0][1]}, $k),
+		$array[0][0]{lc $k} = @array
+	    ] = $v;
 	}
     }
     bless(\@array, $class);
@@ -76,7 +81,7 @@ sub STORE($$) {
     $self->[
 	$self->[0][0]{$lckey} >= 1	? $self->[0][0]{$lckey} :
 	defined($self->[0][0]{$lckey})	? _croak(NO_SUCH_INDEX) :
-	($self->[0][1]{$lckey} = $key, $self->[0][0]{$lckey} = @$self)
+	(push(@{$self->[0][1]}, $key), $self->[0][0]{$lckey} = @$self)
     ] = $value;
 }
 
@@ -85,27 +90,34 @@ sub _croak { require Carp; Carp::croak(sprintf(shift, @_)); }
 sub TIEHASH(@) { bless \$Obj => shift; }
 
 sub FIRSTKEY() {
-    scalar keys %{${$_[0]}->[0][1]};
+#   scalar @{${$_[0]}->[0][1]};
+    ${$_[0]}->[0][2]=0;
     $_[0]->NEXTKEY;
 }
 
 sub NEXTKEY($) {
     my $self = shift;
     $self = $$self;
-    if (my($k, $v) = each %{$self->[0][1]}) {
-	return wantarray ? ($v, $self->[$self->[0][0]{$k}]) : $v;
-    } else { return () }
+    if ($self->[0][2] < @{$self->[0][1]}) {
+	my $key =  $self->[0][1][$self->[0][3]++];
+	return wantarray ? ($key, $self->[$self->[0][3]]) : $key;
+    } else {
+	return wantarray ? () : undef;
+    }
+#   if (my $k = each @{$self->[0][1]}) {
+#	return wantarray ? ($k, $self->[$self->[0][0]{lc $k}]) : $k;
+#   } else { return () }
 }
 
-sub EXISTS($) { exists ${$$_[0]}->[0][0]{lc $_[1]} }
+sub EXISTS($) { exists ${$_[0]}->[0][0]{lc $_[1]} }
 
 sub DELETE($) {
     my $self = shift;
     my $lckey = lc shift;
     $self = $$self;
     undef $self->{$lckey};
+    splice @{$self->[0][1]}, $self->[0][0]{$lckey}-1, 1;
     delete $self->[0][0]{$lckey};
-    delete $self->[0][1]{$lckey};
 }
 
 sub CLEAR() { @{${$_[0]}} = (); }
@@ -120,18 +132,17 @@ Class::PseudoIxIHash - Emulates Pseudo-Hash behaviour with case insensitive keys
 
 =head1 VERSION
 
-This document describes version 1.0 of Class::PseudoIxIHash, released
-June 16, 2014.
+This document describes version 1.0 of Class::PseudoIHash, released
+June 14, 2014.
 
 =head1 SYNOPSIS
 
-    use Class::PseudoIxIHash;
+    use Class::PseudoIxIIHash;
 
-    my(@args)= ([qw/key1 key2 key3 key4/], [1..10]);
-    my $ref2 = Class::PseudoIxIHash->new(@args);	# constructor syntax
+    my(@args)= ([qw/key1 Key2 "Key3"/], [1..10]);
+    my $ref2 = Class::PseudoIHash->new(@args);	# constructor syntax
 
-    my(%hash)= (Id => 1, Value => 2);		# existing mapping
-    my $ref3 = Class::PseudoIxIHash->new(qw/Id Value/);	# constructor syntax
+    my $ref3 = Class::PseudoIHash->new(qw/Id "Value"/);	# constructor syntax
     ($ref3->array) = qw/1 foo/;			# array assignment
     $ref3->{Comment} = 'new key';		# == $ref3->[3]
     warn $ref3->{comment};			# 'new_key'
