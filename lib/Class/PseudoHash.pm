@@ -47,6 +47,8 @@ sub new {
 sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
 *row = \&array;
 
+sub index { my $self = shift; @{$self->[0]}{ @_}; }	# not confuse with CORE::index
+
 sub FETCH($) {
     my($self, $key) = @_;
 
@@ -77,9 +79,9 @@ sub NEXTKEY($) { each %{${$_[0]}->[0]}; }
 
 sub EXISTS($) { exists ${$_[0]}->[0]{$_[1]}; }
 
-sub DELETE($) { my($self, $key) =  @_; $self = $$self; undef $self->{$key} ; delete $self->[0]{$key}; }
+sub DELETE($) { my($self, $key) = @_; $self = $$self; undef $self->{$key} ; delete $self->[0]{$key}; }
 
-sub CLEAR() { @{${$_[0]}} = (); }
+sub CLEAR() { undef @{${$_[0]}}; }
 
 1;
 

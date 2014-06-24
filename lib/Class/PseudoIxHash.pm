@@ -57,6 +57,8 @@ sub new {
 sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
 *row = \&array;
 
+sub index { my $self = shift; @{$self->[0][0]}{ @_}; }	# not confuse with CORE::index
+
 sub FETCH($) {
     my $self = shift;
     my $key =  shift;
@@ -114,7 +116,7 @@ sub DELETE($) {
     delete $self->[0][0]{$key};
 }
 
-sub CLEAR() { @{${$_[0]}} = (); }
+sub CLEAR() { undef @{${$_[0]}}; }
 
 1;
 

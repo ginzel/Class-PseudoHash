@@ -59,6 +59,8 @@ sub new {
 sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
 *row = \&array;
 
+sub index { my $self = shift; @{$self->[0][0]}{ map { lc; } @_}; }	# not confuse with CORE::index
+
 sub FETCH($) {
     my $self = shift;
     my $lckey = lc shift;
@@ -96,8 +98,8 @@ sub NEXTKEY($) {
     my $self = shift;
     $self = $$self;
     if ($self->[0][2] < @{$self->[0][1]}) {
-	my $key =  $self->[0][1][$self->[0][3]++];
-	return wantarray ? ($key, $self->[$self->[0][3]]) : $key;
+	my $key = $self->[0][1][$self->[0][2]++];
+	return wantarray ? ($key, $self->[$self->[0][2]]) : $key;
     } else {
 	return wantarray ? () : undef;
     }
@@ -117,7 +119,7 @@ sub DELETE($) {
     delete $self->[0][0]{$lckey};
 }
 
-sub CLEAR() { @{${$_[0]}} = (); }
+sub CLEAR() { undef @{${$_[0]}}; }
 
 1;
 

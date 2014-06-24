@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 my ($class, $phash);
 
@@ -25,3 +25,4 @@ is($phash->[1],     1,     'array access Id');
 is($phash->{Id},    1,     'hash access Id');
 is($phash->[2],     'foo', 'array access Value');
 is($phash->{Value}, 'foo', 'hash access Value');
+cmp_ok($phash->index('Value'), '==', 2, 'index' );

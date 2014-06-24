@@ -31,7 +31,7 @@ use overload (
 sub import { tie %{$Proxy}, shift; }
 
 use subs qw/lc/;
-sub lc { return /^\".*\"$/ ? $_ : CORE::lc $_ for (shift); }
+sub lc(_) { return /^\".*\"$/ ? $_ : CORE::lc $_ for (shift); }
 
 sub new {
     my $class = shift;
@@ -61,6 +61,8 @@ sub new {
 
 sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
 *row = \&array;
+
+sub index { my $self = shift; @{$self->[0][0]}{ map { lc; } @_}; }	# not confuse with CORE::index
 
 sub FETCH($) {
     my $self = shift;
@@ -99,7 +101,7 @@ sub NEXTKEY($) {
     my $self = shift;
     $self = $$self;
     if ($self->[0][2] < @{$self->[0][1]}) {
-	my $key =  $self->[0][1][$self->[0][3]++];
+	my $key = $self->[0][1][$self->[0][3]++];
 	return wantarray ? ($key, $self->[$self->[0][3]]) : $key;
     } else {
 	return wantarray ? () : undef;
@@ -120,7 +122,7 @@ sub DELETE($) {
     delete $self->[0][0]{$lckey};
 }
 
-sub CLEAR() { @{${$_[0]}} = (); }
+sub CLEAR() { undef @{${$_[0]}}; }
 
 1;
 
@@ -128,11 +130,11 @@ __END__
 
 =head1 NAME
 
-Class::PseudoIxIHash - Emulates Pseudo-Hash behaviour with case insensitive keys
+Class::PseudoIxIIHash - Emulates Pseudo-Hash behaviour with case insensitive keys
 
 =head1 VERSION
 
-This document describes version 1.0 of Class::PseudoIHash, released
+This document describes version 1.0 of Class::PseudoIxIIHash, released
 June 14, 2014.
 
 =head1 SYNOPSIS
@@ -140,10 +142,11 @@ June 14, 2014.
     use Class::PseudoIxIIHash;
 
     my(@args)= ([qw/key1 Key2 "Key3"/], [1..10]);
-    my $ref2 = Class::PseudoIHash->new(@args);	# constructor syntax
+    my $ref2 = Class::PseudoIxIIHash->new(@args);	# constructor syntax
 
-    my $ref3 = Class::PseudoIHash->new(qw/Id "Value"/);	# constructor syntax
+    my $ref3 = Class::PseudoIxIIHash->new(qw/Id "Value"/);	# constructor syntax
     ($ref3->array) = qw/1 foo/;			# array assignment
+    warn $ref3->{'"Value"'};			# foo
     $ref3->{Comment} = 'new key';		# == $ref3->[3]
     warn $ref3->{comment};			# 'new_key'
 
