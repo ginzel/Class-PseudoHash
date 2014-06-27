@@ -53,6 +53,7 @@ sub new {
 	    ] = $v;
 	}
     }
+    warn 'PIxIH NEW: ', \@array, ' ', join ':', caller;;
     bless(\@array, $class);
 }
 
@@ -75,6 +76,7 @@ sub FETCH($) {
 sub STORE($$) {
     my($self, $key, $value) = @_;
     my $lckey = lc $key;
+    warn "PIxIIH STORE $self: $key->$value; ", join ':', caller;;
 
     $self = $$self;
     $self->[
