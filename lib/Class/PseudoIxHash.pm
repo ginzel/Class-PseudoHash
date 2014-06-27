@@ -4,6 +4,7 @@ package Class::PseudoIxHash;
 # based on Class::PseudoHash and Hash::Case::Preserve
 # http://cpansearch.perl.org/src/MARKOV/Hash-Case-1.02/lib/Hash/Case/Preserve.pm
 
+use 5.008;	# our
 #use 5.12;	# each @array
 use strict;
 our $VERSION = '0.1';

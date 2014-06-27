@@ -6,6 +6,7 @@ package Class::PseudoIxIIHash;
 
 # ToDo: keep FIRST/LAST?
 
+use 5.008;	# our
 #use 5.12;	# each @array
 use strict;
 our $VERSION = '0.1';
