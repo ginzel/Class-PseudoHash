@@ -27,20 +27,8 @@ sub new {
     my $class = shift;
     my @array = undef;
 
-    if (UNIVERSAL::isa($_[0], 'ARRAY')) {
-	foreach my $k (@{$_[0]}) {
-	    $array[$array[0]{$k} = @array] = $_[1][$#array];
-	}
-    }
-    else {
-	while (my($k, $v) = splice(@_, 0, 2)) {
-	    $array[$array[0]{$k} = @array] = $v;
-	}
-    }
     bless(\@array, $class);
 }
-
-sub index { my $self = shift; @{$self->[0]}{ @_}; }	# not confuse with CORE::index
 
 sub FETCH($) {
     my($self, $key) = @_;
@@ -56,6 +44,7 @@ sub STORE($$) {
     my($self, $key, $value) = @_;
 
     $self = $$self;
+    warn "STORE $self: $key->$value; ", join ':', caller;
     return $self->[
 	$self->[0]{$key} >= 1     ? $self->[0]{$key} :
 	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) : ($self->[0]{$key} = @$self)

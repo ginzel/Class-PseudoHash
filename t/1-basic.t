@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 10;
+use Test::More tests => 8;
 
 my ($class, $phash);
 
@@ -9,16 +9,11 @@ BEGIN {
     use_ok($class = 'Class::PseudoHash');
 }
 
-my @keys = qw/hello hay hoo aiph/;
-my @arg = ([@keys], [ 1 .. 10 ]);
-$phash = $class->new(@arg);
+$phash = $class->new;
+my(@keys)= qw/hello hay hoo aiph/;
+@{$phash}{@keys} = (1..@keys);
 
 isa_ok($phash, $class, 'new()');
-
-#$phash = fields::phash(@arg);
-$phash = Class::PseudoHash->new(@arg);
-
-isa_ok($phash, $class, 'phash()');
 
 $phash->{hello} = 'hi';
 $phash->{hay}   = 'hay';
@@ -30,4 +25,3 @@ is($#{$phash}, 4, 'fetchsize');
 like("$phash", qr/^$class=ARRAY\(0x[0-9a-f]+\)$/, 'stringification');
 is($phash ? 1 : 0, 1, 'bool context');
 cmp_ok(10 + $phash, '!=', 10, 'numeric context');
-cmp_ok($phash->index('hay'), '==', 2, 'index' );

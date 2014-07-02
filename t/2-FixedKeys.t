@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 4;
 
 my ($class, $phash);
 
@@ -11,7 +11,7 @@ BEGIN {
 
 $phash = $class->new;
 
-$Class::PseudoHash::FixedKeys = 0;
+#$Class::PseudoHash::FixedKeys = 0;
 $phash->{foo} = 'bar';
 
 #use Data::Dumper;
@@ -20,7 +20,6 @@ $phash->{foo} = 'bar';
 is($phash->[1],   'bar', 'array access');
 is($phash->{foo}, 'bar', 'hash access');
 is_deeply([keys %{$phash}], [qw/foo/], 'keys');
-cmp_ok($phash->index('foo'), '==', 1, 'index' );
 
 #delete $phash->{foo};
 #warn Dumper $phash;
