@@ -1,6 +1,6 @@
 package Class::PseudoHash;
 
-use 5.10.0;	# //=
+use 5.005;
 use strict;
 our $VERSION = '1.30';
 
@@ -27,11 +27,7 @@ sub new {
     my $class = shift;
     my @array = undef;
 
-    if (UNIVERSAL::isa($_[0], 'HASH')) {
-	@array = @_;	# user is responsible for the "quality" (length) of the array/arguments
-	$array[keys %{$array[0]}] //= undef;	# allocate size, so $#array works
-    }
-    elsif (UNIVERSAL::isa($_[0], 'ARRAY')) {
+    if (UNIVERSAL::isa($_[0], 'ARRAY')) {
 	foreach my $k (@{$_[0]}) {
 	    $array[$array[0]{$k} = @array] = $_[1][$#array];
 	}
@@ -43,9 +39,6 @@ sub new {
     }
     bless(\@array, $class);
 }
-
-sub array() : lvalue { @{$_[0]}[1..$#{$_[0]}]; }
-*row = \&array;
 
 sub index { my $self = shift; @{$self->[0]}{ @_}; }	# not confuse with CORE::index
 
