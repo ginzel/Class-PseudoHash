@@ -6,8 +6,8 @@ package Class::PseudoIxIIHash;
 
 # ToDo: keep FIRST/LAST?
 
-use 5.008;	# our
-#use 5.12;	# each @array
+#use 5.008;	# our
+use 5.12;	# each @array
 use strict;
 our $VERSION = '0.1';
 
@@ -35,7 +35,7 @@ sub lc(_) { return /^\".*\"$/ ? $_ : CORE::lc $_ for (shift); }
 
 sub new {
     my $class = shift;
-    my(@array) = ([{}, [], undef], );	# lckeys => #, order of keys, counter
+    my(@array) = ([{}, []], );	# lckeys => #, order of keys
 
     if (UNIVERSAL::isa($_[0], 'HASH')) {
 	_croak('%s', "Ordered (Pseudo)Hash cannot be initialised from an unordered hash.\n"); # or sort keys?
@@ -92,23 +92,16 @@ sub _croak { require Carp; Carp::croak(sprintf(shift, @_)); }
 sub TIEHASH(@) { bless \$Obj => shift; }
 
 sub FIRSTKEY() {
-#   scalar @{${$_[0]}->[0][1]};
-    ${$_[0]}->[0][2]=0;
+    scalar @{${$_[0]}->[0][1]};
     $_[0]->NEXTKEY;
 }
 
 sub NEXTKEY($) {
     my $self = shift;
     $self = $$self;
-    if ($self->[0][2] < @{$self->[0][1]}) {
-	my $key = $self->[0][1][$self->[0][3]++];
-	return wantarray ? ($key, $self->[$self->[0][3]]) : $key;
-    } else {
-	return wantarray ? () : undef;
-    }
-#   if (my $k = each @{$self->[0][1]}) {
-#	return wantarray ? ($k, $self->[$self->[0][0]{lc $k}]) : $k;
-#   } else { return () }
+    if (my $k = each @{$self->[0][1]}) {
+ 	return wantarray ? ($k, $self->[$self->[0][0]{lc $k}]) : $k;
+    } else { return () }
 }
 
 sub EXISTS($) { exists ${$_[0]}->[0][0]{lc $_[1]} }
