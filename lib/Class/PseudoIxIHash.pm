@@ -7,7 +7,6 @@ package Class::PseudoIxIHash;
 # ToDo: keep FIRST/LAST?
 
 use 5.008;	# our
-#use 5.12;	# each @array
 use strict;
 our $VERSION = '0.1';
 
@@ -89,7 +88,6 @@ sub _croak { require Carp; Carp::croak(sprintf(shift, @_)); }
 sub TIEHASH(@) { bless \$Obj => shift; }
 
 sub FIRSTKEY() {
-#   scalar @{${$_[0]}->[0][1]};
     ${$_[0]}->[0][2]=0;
     $_[0]->NEXTKEY;
 }
@@ -103,9 +101,6 @@ sub NEXTKEY($) {
     } else {
 	return wantarray ? () : undef;
     }
-#   if (my $k = each @{$self->[0][1]}) {
-#	return wantarray ? ($k, $self->[$self->[0][0]{lc $k}]) : $k;
-#   } else { return () }
 }
 
 sub EXISTS($) { exists ${$_[0]}->[0][0]{lc $_[1]} }
