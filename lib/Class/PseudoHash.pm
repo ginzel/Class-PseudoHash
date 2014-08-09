@@ -34,6 +34,7 @@ sub FETCH($) {
     my($self, $key) = @_;
 
     $self = $$self;
+    warn "FETCH $self: $key; ", join ':', caller;
     return $self->[
 	$self->[0]{$key} >= 1     ? $self->[0]{$key} :
 	defined($self->[0]{$key}) ? _croak(NO_SUCH_INDEX) : @$self
